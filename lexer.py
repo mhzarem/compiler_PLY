@@ -58,7 +58,8 @@ class Lexer:
         'COLON',
         'EXP',
         'SEMICOLON',
-        'COMMA'
+        'COMMA',
+        'ERROR'
 
     )
     reserved = {
@@ -84,6 +85,7 @@ class Lexer:
         'callout': 'CALLOUT_KW',
         'true': 'BOOL_CONSTANT',
         'false': 'BOOL_CONSTANT',
+
         }
 
     t_OPENING_BRACE = r'{'
@@ -141,9 +143,17 @@ class Lexer:
         return t
 
     def t_ID(self, t):
-        r'|'\
+        r'([a-zA-Z]{1,5}[0-9])+[a-zA-Z]*[_][a-zA-Z][a-zA-Z0-9]*|'\
+         '[a-zA-Z]+[_][a-zA-Z][a-zA-Z0-9]*|'\
          '[a-zA-Z][a-zA-Z0-9]*'
         t.type = self.reserved.get(t.value, 'ID')  # Check for reserved words
+
+        if str(t.value).find('_') != -1:
+            temp = str(t.value).split('_')
+            if len(temp[0]) % 2 == 0:
+                self.t_error(t)
+                t.type = 'ERROR'
+
         if t.type == 'ID':
             if t.value not in self.state_table:
                 self.state_table.append(t.value)
@@ -172,16 +182,13 @@ class Lexer:
         r'\n+'
         t.lexer.lineno += len(t.value)
 
-
     # A string containing ignored characters (spaces and tabs)
     t_ignore = ' \t\r'
 
-
     # Error handling rule
     def t_error(self, t):
-        print("Illegal character '%s'" % t.value[0])
+        print("Illegal type '%s'" % t.value)
         t.lexer.skip(1)
-
 
     def build(self, **kwargs):
         '''
@@ -198,9 +205,31 @@ f.close()
 temp = Lexer()
 lexer = temp.build()
 lexer.input(data)
+
 while True:
+    at = "-"
     tok = lexer.token()
     if not tok:
         break  # No more input
-    print(tok.value)
-print(temp.state_table)
+    if tok.type == 'ID':
+        print(str(tok.value)+'\t'+str(tok.type)+'\t'+str(temp.state_table.index(tok.value)))
+    elif tok.type == 'BOOL_CONSTANT':
+        if tok.value == 'true':
+            print(str(tok.value) + '\t' + str(tok.type) + '\t' + "1")
+        else:
+            print(str(tok.value) + '\t' + str(tok.type) + '\t' + "0")
+    elif tok.type == 'CHAR_CONSTANT':
+        print(str(tok.value) + '\t' + str(tok.type) + '\t' + str(tok.value))
+    elif tok.type == 'INT_CONSTANT':
+        print(str(tok.value) + '\t' + str(tok.type) + '\t' + str(tok.value))
+    elif tok.type == 'FLOAT_CONSTANT':
+        print(str(tok.value) + '\t' + str(tok.type) + '\t' + str(tok.value))
+    elif tok.type == 'STRING_CONSTANT':
+        print(str(tok.value) + '\t' + str(tok.type) + '\t' + str(tok.value))
+    else:
+        print(str(tok.value) + '\t' + str(tok.type) + '\t' + at)
+
+
+
+
+
